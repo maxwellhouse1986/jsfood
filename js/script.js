@@ -91,8 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //  Modal
 
     const mButs = document.querySelectorAll('[data-modal]'),
-          wsModal = document.querySelector ('.modal'),
-          modalClose = document.querySelector('[data-close]');    
+          wsModal = document.querySelector ('.modal');
     
     mButs.forEach(but => {
         but.addEventListener('click', event =>{
@@ -101,19 +100,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     function openModal() {
-        wsModal.classList.toggle('show');
+        wsModal.classList.add('show');
+        wsModal.classList.remove('hide');
         document.body.style.overflow = 'hidden';        
     } 
 
     function closeModal() {
-        wsModal.classList.toggle('show');
+        wsModal.classList.add('hide');
+        wsModal.classList.add('show');
         document.body.style.overflow = '';
     }
 
-    modalClose.addEventListener('click', closeModal);
     
     wsModal.addEventListener('click', event => {
-        if (event.target === wsModal) {
+        if (event.target === wsModal || event.target.getAttribute('data-close') == '') {
             closeModal();
         }
     });
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal();
         }
     });
-    // const wsTimerOpen = setTimeout(openModal, 5000);
+    const wsTimerOpen = setTimeout(openModal, 50000);
 
     function openModalByScroll() {
         if (window.pageYOffset + document.documentElement.clientHeight >=
@@ -202,4 +202,80 @@ document.addEventListener('DOMContentLoaded', () => {
         11,
         ".menu .container")
         .addMenu();
+    //Forms
+        const forms = document.querySelectorAll('form');
+
+        const message ={
+            loading: 'img/form/spinner.svg',
+            success: 'Спасибо! Скоро с вами свяжемся',
+            failure: 'Что-то пошло не так...'
+        };
+
+        forms.forEach(item => {
+            postData(item);
+        }); 
+
+        function postData(form) {
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+
+                const statusMessage = document.createElement('img');
+                statusMessage.src = message.loading;
+                statusMessage.style.cssText = `
+                    display: block;
+                    margin: 0 auto;
+                `;
+                form.insertAdjacentElement('afterend', statusMessage);
+                // form.append(statusMessage);
+
+
+                const request = new XMLHttpRequest();
+                request.open('POST', 'server.php');
+
+                request.setRequestHeader('Content-type', 'application/json');
+                const formData = new FormData(form);
+
+                const object = {};
+                formData.forEach((value, key) => {
+                    object[key] = value;
+                });
+
+                const json = JSON.stringify(object);
+                request.send(json);
+                
+                request.addEventListener('load', () => {
+                    if ( request.status === 200) {
+                        console.log(request.response);
+                        showThanksModal(message.success);
+                        form.reset();
+                        statusMessage.remove();
+                    } else {
+                        showThanksModal(message.failure);
+
+                    }
+
+                });
+            });
+        }
+        function showThanksModal(message) {
+            const prevModalDialog = document.querySelector('.modal__dialog');
+            prevModalDialog.classList.add('hide');
+            openModal();
+
+            const thanksModal = document.createElement('div');
+            thanksModal.classList.add('modal__dialog');
+            thanksModal.innerHTML = `
+                <div class="modal__content">
+                    <div class="modal__close" data-close>×</div>
+                    <div class="modal__title">${message}</div>
+                </div>
+            `;
+            document.querySelector('.modal').append(thanksModal);
+            setTimeout(() =>{
+                thanksModal.remove();
+                prevModalDialog.classList.add('show');
+                prevModalDialog.classList.remove('hide');
+                closeModal();
+            }, 4000); 
+        }
 });
